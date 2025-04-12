@@ -12,12 +12,13 @@ username = config["github"]["username"]
 email = config["git"]["email"]
 git_url = config["github"]["git_url"]
 
-# Verificar si Git ya está inicializado
-if not (Path(__file__).parent.parent / ".git").exists():
-    subprocess.run("git init", shell=True, check=True)
-    print("Git inicializado.")
-else:
-    print("Git ya estaba inicializado.")
+# Verificar si Git está inicializado
+root_dir = Path(__file__).parent.parent
+if not (root_dir / ".git").exists():
+    print("Error: No se encontró un repositorio Git. Inicializa Git primero.")
+    exit(1)
+
+print("Git ya está inicializado.")
 
 # Configurar usuario
 subprocess.run(f'git config user.email "{email}"', shell=True, check=True)
