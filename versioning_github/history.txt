@@ -1,4 +1,4 @@
 2025-04-11 22:53:41 - Commit: "versionando con versioning_github" - Hash: f217c76 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username GitHub: JorgeDataScientist
 2025-04-11 22:56:24 - Commit: "subiendo readme" - Hash: 19ddb0d - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username GitHub: JorgeDataScientist
 2025-04-11 23:01:26 - Commit: "cambios en versioning_dagshub/push_changes.py" - Hash: d3ad5d3 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username GitHub: JorgeDataScientist
-2025-04-11 23:24:34 - Commit: "actualizando archivos de versionado" - Hash: [pending] - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username GitHub: JorgeDataScientist
+2025-04-11 23:24:34 - Commit: "actualizando archivos de versionado" - Hash: c103b69 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username GitHub: JorgeDataScientist
