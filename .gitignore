@@ -10,3 +10,5 @@ config/versioning_dagshub.yaml
 config/versioning_github.yaml
 data/
 models/
+/data
+/models
