@@ -32,12 +32,7 @@ commit_message = input("Ingresa el mensaje del commit: ")
 
 # Verificar cambios en Git
 result = subprocess.run("git status --porcelain", shell=True, capture_output=True, text=True)
-if result.stdout.strip():
-    subprocess.run("git add .", shell=True, check=True)
-    subprocess.run(f'git commit -m "{commit_message}"', shell=True, check=True)
-    print("Cambios commiteados en Git.")
-else:
-    print("No hay cambios en Git para commitear.")
+changes_to_commit = result.stdout.strip()
 
 # DVC: Actualizar directorios
 for directory in dvc_dirs:
@@ -47,35 +42,47 @@ for directory in dvc_dirs:
     else:
         print(f"{directory} no existe, se omite.")
 
-# Git: Añadir archivos .dvc y commitear
+# Git: Añadir archivos .dvc
 dvc_files = " ".join(f"{d}.dvc" for d in dvc_dirs if (Path(__file__).parent.parent / d).exists())
 if dvc_files:
     subprocess.run(f"git add {dvc_files}", shell=True, check=True)
-    result = subprocess.run("git status --porcelain", shell=True, capture_output=True, text=True)
-    if result.stdout.strip():
-        subprocess.run(f'git commit -m "DVC: {commit_message}"', shell=True, check=True)
-        print("Archivos .dvc commiteados.")
-    else:
-        subprocess.run(f'git commit -m "DVC: {commit_message}" --allow-empty', shell=True, check=True)
-        print("Archivos .dvc commiteados (commit vacío).")
+
+# Escribir en history.txt antes del commit
+history_path = Path(__file__).parent / "history.txt"
+timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+log_entry = (
+    f"{timestamp} - Commit: \"{commit_message}\" - Hash: [pending] - "
+    f"Creador: {creator_name} - Email: {email} - Username DAGsHub: {username}\n"
+)
+with open(history_path, "a") as f:
+    f.write(log_entry)
+print("Registro añadido a history.txt.")
+
+# Añadir history.txt y otros cambios a Git
+subprocess.run("git add .", shell=True, check=True)
+
+# Commitear todos los cambios
+if changes_to_commit or dvc_files:
+    subprocess.run(f'git commit -m "{commit_message}"', shell=True, check=True)
+    print("Cambios commiteados en Git.")
 else:
-    print("No hay archivos .dvc para commitear.")
+    subprocess.run(f'git commit -m "{commit_message}" --allow-empty', shell=True, check=True)
+    print("Cambios commiteados en Git (commit vacío).")
+
+# Obtener hash del commit
+commit_hash = subprocess.check_output("git log -1 --pretty=format:%h", shell=True).decode().strip()
+
+# Actualizar history.txt con el hash correcto
+with open(history_path, "r") as f:
+    lines = f.readlines()
+lines[-1] = (
+    f"{timestamp} - Commit: \"{commit_message}\" - Hash: {commit_hash} - "
+    f"Creador: {creator_name} - Email: {email} - Username DAGsHub: {username}\n"
+)
+with open(history_path, "w") as f:
+    f.writelines(lines)
 
 # Subir a DAGsHub
 subprocess.run("git push origin master", shell=True, check=True)
 subprocess.run("dvc push", shell=True, check=True)
 print("Cambios subidos a DAGsHub.")
-
-# Obtener hash del último commit
-commit_hash = subprocess.check_output("git log -1 --pretty=format:%h", shell=True).decode().strip()
-
-# Escribir en history.txt
-history_path = Path(__file__).parent / "history.txt"
-with open(history_path, "a") as f:
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    log_entry = (
-        f"{timestamp} - Commit: \"{commit_message}\" - Hash: {commit_hash} - "
-        f"Creador: {creator_name} - Email: {email} - Username DAGsHub: {username}\n"
-    )
-    f.write(log_entry)
-print("Registro añadido a history.txt.")
