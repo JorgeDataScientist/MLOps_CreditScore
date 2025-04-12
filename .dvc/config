@@ -1,5 +1,7 @@
 [core]
-    remote = origin
+    remote = github-local
 ['remote "origin"']
     url = s3://dvc
     endpointurl = https://dagshub.com/JorgeDataScientist/MLOps_CreditScore.s3
+['remote "github-local"']
+    url = G:\MLOps Proyecto End_to_End\IntelligentCreditScoringPipeline\dvc_storage_github
