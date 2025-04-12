@@ -14,6 +14,19 @@ username = config["dagshub"]["username"]
 email = config["git"]["email"]
 creator_name = "Jorge Luis Garcia"
 
+# Asegurarse de estar en la rama master
+result = subprocess.run("git status --porcelain", shell=True, capture_output=True, text=True)
+if result.stdout.strip():
+    print("Hay cambios no commiteados. Por favor, commitea o guarda los cambios antes de cambiar a master.")
+    exit(1)
+
+try:
+    subprocess.run("git checkout master", shell=True, check=True)
+    print("En rama master.")
+except subprocess.CalledProcessError:
+    print("Error: No se pudo cambiar a la rama master. Asegúrate de que exista.")
+    exit(1)
+
 # Solicitar mensaje del commit
 commit_message = input("Ingresa el mensaje del commit: ")
 
@@ -28,18 +41,25 @@ else:
 
 # DVC: Actualizar directorios
 for directory in dvc_dirs:
-    subprocess.run(f"dvc add {directory}", shell=True, check=True)
-    print(f"{directory} actualizado en DVC.")
+    if (Path(__file__).parent.parent / directory).exists():
+        subprocess.run(f"dvc add {directory}", shell=True, check=True)
+        print(f"{directory} actualizado en DVC.")
+    else:
+        print(f"{directory} no existe, se omite.")
 
-# Git: Añadir archivos .dvc y commitear si hay cambios
-dvc_files = " ".join(f"{d}.dvc" for d in dvc_dirs)
-subprocess.run(f"git add {dvc_files}", shell=True, check=True)
-result = subprocess.run("git status --porcelain", shell=True, capture_output=True, text=True)
-if result.stdout.strip():
-    subprocess.run(f'git commit -m "DVC: {commit_message}"', shell=True, check=True)
-    print("Archivos .dvc commiteados.")
+# Git: Añadir archivos .dvc y commitear
+dvc_files = " ".join(f"{d}.dvc" for d in dvc_dirs if (Path(__file__).parent.parent / d).exists())
+if dvc_files:
+    subprocess.run(f"git add {dvc_files}", shell=True, check=True)
+    result = subprocess.run("git status --porcelain", shell=True, capture_output=True, text=True)
+    if result.stdout.strip():
+        subprocess.run(f'git commit -m "DVC: {commit_message}"', shell=True, check=True)
+        print("Archivos .dvc commiteados.")
+    else:
+        subprocess.run(f'git commit -m "DVC: {commit_message}" --allow-empty', shell=True, check=True)
+        print("Archivos .dvc commiteados (commit vacío).")
 else:
-    print("No hay cambios en .dvc para commitear.")
+    print("No hay archivos .dvc para commitear.")
 
 # Subir a DAGsHub
 subprocess.run("git push origin master", shell=True, check=True)
