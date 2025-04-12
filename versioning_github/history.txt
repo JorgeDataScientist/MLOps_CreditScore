@@ -4,3 +4,4 @@
 2025-04-11 23:24:34 - Commit: "actualizando archivos de versionado" - Hash: c103b69 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username GitHub: JorgeDataScientist
 2025-04-11 23:33:24 - Commit: "prueba" - Hash: 2b0c1ee - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username GitHub: JorgeDataScientist
 2025-04-11 23:36:01 - Commit: "prueba 2" - Hash: 5f6268a - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username GitHub: JorgeDataScientist
+2025-04-11 23:37:55 - Commit: "prueba 3" - Hash: [pending] - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username GitHub: JorgeDataScientist
