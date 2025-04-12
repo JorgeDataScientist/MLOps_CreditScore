@@ -1,0 +1,2 @@
+2025-04-11 20:03:21 - Commit: "Creando scripts de versioning" - Hash: 9ff261e - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
+2025-04-11 21:10:21 - Commit: "Inicializando versionado_dagshub" - Hash: 09dc021 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
