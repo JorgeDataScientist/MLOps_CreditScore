@@ -9,3 +9,5 @@ __pycache__/
 config/versioning_dagshub.yaml
 data/
 models/
+/data
+/models
