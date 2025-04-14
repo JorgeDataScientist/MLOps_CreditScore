@@ -1,0 +1,11 @@
+venv_credit_scoring/
+mlruns/
+.vscode/
+.pytest_cache/
+__pycache__/
+*.log
+*.pyc
+.ipynb_checkpoints/
+config/versioning_dagshub.yaml
+data/
+models/
