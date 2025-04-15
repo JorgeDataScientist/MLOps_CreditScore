@@ -1,0 +1,55 @@
+# Configuración principal para el pipeline de Credit Scoring.
+# Define rutas de entrada/salida, combina configuraciones de preprocesamiento,
+# modelo y predicciones usando Hydra.
+
+defaults:
+  - process: preprocess  # Carga config/preprocess.yaml
+  - model_config: model_1  # Carga config/model_config/model_1.yaml por defecto
+  - _self_               # Permite sobrescribir valores con este archivo
+
+stage: "all"  # Etapa por defecto, puede ser 'preprocess', 'train', 'evaluate', 'predict'
+
+raw:
+  path: data/raw/train.csv  # Ruta relativa al archivo de datos crudos
+
+processed:
+  dir: data/processed  # Directorio base para datos procesados
+  X_train:
+    name: X_train.csv
+    path: ${processed.dir}/${processed.X_train.name}
+  X_test:
+    name: X_test.csv
+    path: ${processed.dir}/${processed.X_test.name}
+  y_train:
+    name: y_train.csv
+    path: ${processed.dir}/${processed.y_train.name}
+  y_test:
+    name: y_test.csv
+    path: ${processed.dir}/${processed.y_test.name}
+
+model:
+  dir: models  # Directorio base para modelos
+  name: rf_model.pkl
+  params_name: params.json
+  path: ${model.dir}/${model_config._name}/${model.name}
+  params_path: ${model.dir}/${model_config._name}/${model.params_name}
+
+metrics:
+  dir: metrics  # Directorio para métricas
+  name: metrics_${model_config._name}.csv
+  path: ${metrics.dir}/${metrics.name}
+
+graphics:
+  dir: graphics  # Directorio para gráficos
+  confusion_matrix:
+    name: confusion_matrix_${model_config._name}.png
+    path: ${graphics.dir}/${graphics.confusion_matrix.name}
+
+predict:
+  input_path: data/external/new_data.csv  # Ruta a datos nuevos para predicciones
+  output_dir: data/processed  # Directorio para resultados de predicciones
+  output_name: predictions_${model_config._name}.csv  # Nombre dinámico para resultados
+
+mlflow:
+  tracking_uri: "https://dagshub.com/JorgeDataScientist/MLOps_CreditScore.mlflow"
+  use_dagshub: true

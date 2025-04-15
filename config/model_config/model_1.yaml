@@ -1,0 +1,34 @@
+# Configuración del modelo RandomForestClassifier (model_1).
+# Define parámetros por defecto, espacio de búsqueda para optimización,
+# validación cruzada y métricas de evaluación.
+
+name: RandomForestClassifier  # Nombre del modelo usado en el pipeline.
+
+params:  # Parámetros por defecto del modelo.
+  n_estimators: 100  # Número de árboles.
+  max_depth: null  # Profundidad máxima (null = sin límite).
+  min_samples_split: 5  # Mínimo de muestras para dividir un nodo.
+  min_samples_leaf: 1  # Mínimo de muestras por hoja.
+  class_weight: balanced  # Pondera clases según frecuencia.
+  random_state: 42  # Semilla para reproducibilidad.
+
+search_space:  # Espacio de búsqueda para optimización de hiperparámetros.
+  n_estimators: [50, 100, 200, 300]
+  max_depth: [10, 20, 30, null]
+  min_samples_split: [2, 5, 10]
+  min_samples_leaf: [1, 2, 4]
+  class_weight: ["balanced", "balanced_subsample", null]
+
+cv:  # Configuración de validación cruzada.
+  folds: 5  # Número de divisiones.
+  scoring: f1_macro  # Métrica para optimización.
+
+optimization:  # Parámetros para búsqueda de hiperparámetros.
+  n_iter: 20  # Combinaciones a probar en RandomizedSearchCV.
+
+metrics:  # Métricas a calcular.
+  - accuracy
+  - f1_macro
+  - f1_per_class
+
+_name: model_1  # Identificador único para directorios y archivos.
