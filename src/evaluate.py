@@ -3,7 +3,7 @@
 Carga datos de prueba y el modelo, calcula métricas, genera múltiples gráficos
 (matriz de confusión, histograma de clases, barras de métricas, curva ROC,
 dispersión de características, importancia de características),
-guarda resultados, gráficos y reporte en metrics/ y graphics/.
+guarda resultados, gráficos y reporte en metrics/ y graphics/<model_name>/.
 
 Dependencias:
     - pandas: Para cargar datos.
@@ -83,7 +83,8 @@ def save_confusion_matrix(y_test, y_pred, config: DictConfig):
         y_pred: Predicciones del modelo.
         config: Configuración con clases y ruta para gráficos.
     """
-    graphics_dir = Path(get_original_cwd()) / config.graphics.dir
+    model_name = config.model_config._name
+    graphics_dir = Path(get_original_cwd()) / config.graphics.dir / model_name
     graphics_dir.mkdir(parents=True, exist_ok=True)
     cm_path = graphics_dir / config.graphics.confusion_matrix.name
     
@@ -92,7 +93,7 @@ def save_confusion_matrix(y_test, y_pred, config: DictConfig):
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=config.process.target_classes, yticklabels=config.process.target_classes)
     plt.xlabel("Predicho")
     plt.ylabel("Real")
-    plt.title(f"Matriz de Confusión - {config.model_config._name}")
+    plt.title(f"Matriz de Confusión - {model_name}")
     plt.savefig(cm_path, dpi=300, bbox_inches="tight")
     plt.close()
     logger.info(f"Matriz de confusión guardada en {cm_path}")
@@ -104,15 +105,16 @@ def save_class_distribution(y_test, config: DictConfig):
         y_test: Etiquetas reales.
         config: Configuración con ruta para gráficos.
     """
-    graphics_dir = Path(get_original_cwd()) / config.graphics.dir
+    model_name = config.model_config._name
+    graphics_dir = Path(get_original_cwd()) / config.graphics.dir / model_name
     graphics_dir.mkdir(parents=True, exist_ok=True)
-    hist_path = graphics_dir / f"class_distribution_{config.model_config._name}.png"
+    hist_path = graphics_dir / f"class_distribution_{model_name}.png"
     
     plt.figure(figsize=(8, 6))
     sns.countplot(x=y_test, order=config.process.target_classes, palette="Blues")
     plt.xlabel("Puntaje Crediticio")
     plt.ylabel("Frecuencia")
-    plt.title(f"Distribución de Clases - {config.model_config._name}")
+    plt.title(f"Distribución de Clases - {model_name}")
     plt.savefig(hist_path, dpi=300, bbox_inches="tight")
     plt.close()
     logger.info(f"Histograma de clases guardado en {hist_path}")
@@ -124,9 +126,10 @@ def save_metrics_bar(metrics: dict, config: DictConfig):
         metrics: Diccionario con métricas calculadas.
         config: Configuración con ruta para gráficos.
     """
-    graphics_dir = Path(get_original_cwd()) / config.graphics.dir
+    model_name = config.model_config._name
+    graphics_dir = Path(get_original_cwd()) / config.graphics.dir / model_name
     graphics_dir.mkdir(parents=True, exist_ok=True)
-    bar_path = graphics_dir / f"metrics_bar_{config.model_config._name}.png"
+    bar_path = graphics_dir / f"metrics_bar_{model_name}.png"
     
     plt.figure(figsize=(10, 6))
     metric_names = list(metrics.keys())
@@ -134,7 +137,7 @@ def save_metrics_bar(metrics: dict, config: DictConfig):
     sns.barplot(x=metric_values, y=metric_names, palette="Blues")
     plt.xlabel("Valor")
     plt.ylabel("Métrica")
-    plt.title(f"Métricas de Evaluación - {config.model_config._name}")
+    plt.title(f"Métricas de Evaluación - {model_name}")
     plt.savefig(bar_path, dpi=300, bbox_inches="tight")
     plt.close()
     logger.info(f"Gráfico de barras de métricas guardado en {bar_path}")
@@ -147,9 +150,10 @@ def save_roc_curve(y_test, y_pred_proba, config: DictConfig):
         y_pred_proba: Probabilidades predichas.
         config: Configuración con clases y ruta para gráficos.
     """
-    graphics_dir = Path(get_original_cwd()) / config.graphics.dir
+    model_name = config.model_config._name
+    graphics_dir = Path(get_original_cwd()) / config.graphics.dir / model_name
     graphics_dir.mkdir(parents=True, exist_ok=True)
-    roc_path = graphics_dir / f"roc_curve_{config.model_config._name}.png"
+    roc_path = graphics_dir / f"roc_curve_{model_name}.png"
     
     y_bin = label_binarize(y_test, classes=config.process.target_classes)
     n_classes = y_bin.shape[1]
@@ -165,7 +169,7 @@ def save_roc_curve(y_test, y_pred_proba, config: DictConfig):
     plt.ylim([0.0, 1.05])
     plt.xlabel('Tasa de Falsos Positivos')
     plt.ylabel('Tasa de Verdaderos Positivos')
-    plt.title(f'Curva ROC - {config.model_config._name}')
+    plt.title(f'Curva ROC - {model_name}')
     plt.legend(loc="lower right")
     plt.savefig(roc_path, dpi=300, bbox_inches="tight")
     plt.close()
@@ -179,15 +183,16 @@ def save_feature_scatter(X_test, y_test, config: DictConfig):
         y_test: Etiquetas reales.
         config: Configuración con ruta para gráficos.
     """
-    graphics_dir = Path(get_original_cwd()) / config.graphics.dir
+    model_name = config.model_config._name
+    graphics_dir = Path(get_original_cwd()) / config.graphics.dir / model_name
     graphics_dir.mkdir(parents=True, exist_ok=True)
-    scatter_path = graphics_dir / f"feature_scatter_{config.model_config._name}.png"
+    scatter_path = graphics_dir / f"feature_scatter_{model_name}.png"
     
     plt.figure(figsize=(8, 6))
     sns.scatterplot(x=X_test['Salario_Mensual'], y=X_test['Deuda_Pendiente'], hue=y_test, style=y_test, palette="deep")
     plt.xlabel("Salario Mensual")
     plt.ylabel("Deuda Pendiente")
-    plt.title(f"Dispersión de Características - {config.model_config._name}")
+    plt.title(f"Dispersión de Características - {model_name}")
     plt.legend(title="Puntaje Crediticio")
     plt.savefig(scatter_path, dpi=300, bbox_inches="tight")
     plt.close()
@@ -200,9 +205,10 @@ def save_feature_importance(model, config: DictConfig):
         model: Modelo entrenado.
         config: Configuración con ruta para gráficos.
     """
-    graphics_dir = Path(get_original_cwd()) / config.graphics.dir
+    model_name = config.model_config._name
+    graphics_dir = Path(get_original_cwd()) / config.graphics.dir / model_name
     graphics_dir.mkdir(parents=True, exist_ok=True)
-    importance_path = graphics_dir / f"feature_importance_{config.model_config._name}.png"
+    importance_path = graphics_dir / f"feature_importance_{model_name}.png"
     
     importances = model.named_steps['model'].feature_importances_
     feature_names = config.process.features
@@ -211,7 +217,7 @@ def save_feature_importance(model, config: DictConfig):
     sns.barplot(x=importances, y=feature_names, palette="Blues")
     plt.xlabel("Importancia")
     plt.ylabel("Característica")
-    plt.title(f"Importancia de Características - {config.model_config._name}")
+    plt.title(f"Importancia de Características - {model_name}")
     plt.savefig(importance_path, dpi=300, bbox_inches="tight")
     plt.close()
     logger.info(f"Gráfico de importancia de características guardado en {importance_path}")

@@ -4,7 +4,7 @@
 
 defaults:
   - process: preprocess  # Carga config/preprocess.yaml
-  - model_config: model_1  # Carga config/model_config/model_1.yaml por defecto
+  - model_config: model_3  # Carga config/model_config/model_1.yaml por defecto
   - _self_               # Permite sobrescribir valores con este archivo
 
 stage: "all"  # Etapa por defecto, puede ser 'preprocess', 'train', 'evaluate', 'predict'

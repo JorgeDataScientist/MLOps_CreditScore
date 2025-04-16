@@ -32,11 +32,20 @@ def run_stage(script: str):
     python_path = os.path.join(os.environ.get("VIRTUAL_ENV", ""), "Scripts", "python.exe")
     logger.info(f"Ejecutando {script} con {python_path}...")
     try:
-        result = subprocess.run([python_path, str(script_path)], check=True, capture_output=True, text=True)
+        result = subprocess.run(
+            [python_path, str(script_path)],
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8"
+        )
         logger.info(f"{script} completado exitosamente")
         logger.debug(result.stdout)
     except subprocess.CalledProcessError as e:
         logger.error(f"Error en {script}: {e.stderr}")
+        raise
+    except UnicodeDecodeError as e:
+        logger.error(f"Error de codificación en {script}: {e}")
         raise
 
 def run_pipeline():
@@ -46,4 +55,5 @@ def run_pipeline():
         run_stage(stage)
 
 if __name__ == "__main__":
+    """Punto de entrada para ejecutar el pipeline."""
     run_pipeline()
