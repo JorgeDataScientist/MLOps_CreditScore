@@ -2,4 +2,4 @@
 2025-04-15 00:12:49 - Commit: "Pipeline al 100%" - Hash: 961e784 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
 2025-04-15 01:28:23 - Commit: "Model_1: Graficas - Metricas - Evaluacion" - Hash: deac4d9 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
 2025-04-15 22:31:07 - Commit: "respaldando estado actual - Funcionando al 100% src" - Hash: 8cc372f - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
-2025-04-16 00:22:48 - Commit: "finalizando entrenamientos y experimentos" - Hash: [TBD] - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
+2025-04-16 00:22:48 - Commit: "finalizando entrenamientos y experimentos" - Hash: 3dc390f - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
