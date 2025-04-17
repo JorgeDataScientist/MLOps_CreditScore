@@ -8,3 +8,4 @@
 2025-04-17 00:56:27 - Commit: "model_2 ejecutado" - Hash: 18183e7 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
 2025-04-17 00:58:56 - Commit: "model_2 actualizar" - Hash: a3163e7 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
 2025-04-17 01:46:58 - Commit: "Model_3 ejecutado" - Hash: 0d26ca9 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
+2025-04-17 01:53:25 - Commit: "Eliminando Basura" - Hash: [TBD] - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
