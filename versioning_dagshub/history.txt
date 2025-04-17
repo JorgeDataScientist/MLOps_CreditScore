@@ -6,3 +6,4 @@
 2025-04-16 00:31:56 - Commit: "verificando siguientes pasos" - Hash: 4b24d81 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
 2025-04-16 23:42:36 - Commit: "Añadido Grafica e Informes" - Hash: f76f488 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
 2025-04-17 00:56:27 - Commit: "model_2 ejecutado" - Hash: 18183e7 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
+2025-04-17 00:58:56 - Commit: "model_2 actualizar" - Hash: [TBD] - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
