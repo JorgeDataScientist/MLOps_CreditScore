@@ -241,9 +241,14 @@ def train(config: DictConfig) -> RandomForestClassifier:
     joblib.dump(search.best_estimator_, model_path)
     logger.info(f"Modelo guardado en {model_path}")
     
+    # Guardar parámetros y columnas
+    params_to_save = {
+        "features": list(X_train.columns),
+        "hyperparameters": best_params
+    }
     with open(params_path, "w") as f:
-        json.dump(best_params, f, indent=4)
-    logger.info(f"Parámetros guardados en {params_path}")
+        json.dump(params_to_save, f, indent=4)
+    logger.info(f"Parámetros y columnas guardados en {params_path}")
     
     # Registrar en MLflow
     try:

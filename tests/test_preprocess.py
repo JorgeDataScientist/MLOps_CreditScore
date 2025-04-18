@@ -1,222 +1,265 @@
 """Pruebas unitarias para preprocess.py.
 
-Verifica funciones de carga, limpieza, transformación, creación de features
-y procesamiento de datos.
+Verifica funciones de carga, limpieza y transformación de datos.
 
 Dependencias:
     - pytest: Para ejecutar pruebas.
     - pandas: Para manipulación de datos.
-    - pathlib: Para manejar rutas.
-    - unittest.mock: Para simular configuraciones.
+    - unittest.mock: Para simular configuraciones y rutas.
+    - pathlib: Para manejo de rutas.
 """
 
 import sys
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 # Añadir el directorio raíz al sys.path
 ROOT_DIR = Path(__file__).parent.parent
-sys.path.append(str(ROOT_DIR))
+sys.path.insert(0, str(ROOT_DIR / "src"))
 
 import pytest
 import pandas as pd
-from unittest.mock import Mock
-from src.preprocess import get_data, clean_data, transform_data, create_new_features, process_data, rename_columns, handle_missing_values, encode_categorical
-
-# Ruta base para datos simulados
-BASE_PATH = ROOT_DIR / "tests" / "data"
+import numpy as np
+from src.preprocess import (
+    get_data,
+    rename_columns,
+    strip_strings,
+    handle_missing_values,
+    filter_minimum_values,
+    filter_by_age,
+    filter_by_age_credit_ratio,
+    drop_columns,
+    encode_categorical,
+    select_final_columns
+)
 
 @pytest.fixture
 def config():
     """Crea una configuración simulada para pruebas."""
     return Mock(
-        raw=Mock(path=str(BASE_PATH / "raw" / "credit_data.csv")),
-        processed=Mock(
-            dir=str(BASE_PATH / "processed"),
-            X_train=Mock(name="X_train.csv"),
-            X_test=Mock(name="X_test.csv"),
-            y_train=Mock(name="y_train.csv"),
-            y_test=Mock(name="y_test.csv")
-        ),
+        raw=Mock(path="data/raw/credit_score_raw.csv"),
         process=Mock(
-            target="Puntaje_Credito",
-            test_size=0.2,
-            random_state=42,
-            translations={},
-            cleaning=Mock(min_age=18, max_age_credit_ratio=10.0, drop_columns=[]),
-            encoding={},
-            new_features=[
-                Mock(name="debt_to_income", formula={}),
-                Mock(name="payment_to_income", formula={}),
-                Mock(name="credit_history_ratio", formula={})
-            ]
+            translations={
+                "Edad": "Age",
+                "Salario_Mensual": "Monthly_Salary",
+                "Puntaje_Credito": "Credit_Score"
+            },
+            cleaning=Mock(
+                min_age=18,
+                max_age_credit_ratio=2.0,
+                drop_columns=["ID", "Nombre"]
+            )
         )
     )
 
-@pytest.fixture
-def raw_data():
-    """Carga datos simulados."""
-    return pd.read_csv(BASE_PATH / "raw" / "credit_data.csv")
-
-def test_get_data(config, tmp_path):
-    """Verifica que get_data carga datos correctamente.
-
-    Args:
-        config: Configuración simulada.
-        tmp_path: Directorio temporal proporcionado por pytest.
-
-    Returns:
-        None
-
-    Raises:
-        AssertionError: Si los datos no se cargan o no tienen las columnas esperadas.
-    """
-    with pytest.MonkeyPatch.context() as m:
-        m.setattr("src.preprocess.get_original_cwd", lambda: str(tmp_path))
-        (tmp_path / "tests" / "data" / "raw").mkdir(parents=True)
-        pd.DataFrame({"Salario_Mensual": [5000], "Puntaje_Credito": ["Good"]}).to_csv(
-            tmp_path / "tests" / "data" / "raw" / "credit_data.csv", index=False
-        )
+def test_get_data(tmp_path, config):
+    """Verifica que get_data carga un archivo CSV correctamente."""
+    csv_path = tmp_path / "data" / "raw" / "credit_score_raw.csv"
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    df_expected = pd.DataFrame({
+        "Edad": [25, 30],
+        "Salario_Mensual": [5000.0, 6000.0],
+        "Puntaje_Credito": ["Good", "Standard"]
+    })
+    df_expected.to_csv(csv_path, index=False)
+    
+    with patch("src.preprocess.get_original_cwd", return_value=str(tmp_path)):
         df = get_data(config.raw.path)
+    
     assert isinstance(df, pd.DataFrame)
-    assert len(df) > 0
-    assert "Salario_Mensual" in df.columns
-    assert "Puntaje_Credito" in df.columns
+    assert df.shape == (2, 3)
+    assert list(df.columns) == ["Edad", "Salario_Mensual", "Puntaje_Credito"]
+    pd.testing.assert_frame_equal(df, df_expected)
 
-def test_clean_data(raw_data, config):
-    """Verifica que clean_data elimina valores nulos y aplica filtros.
+def test_rename_columns(config):
+    """Verifica que rename_columns renombra columnas según el diccionario de traducciones."""
+    df_input = pd.DataFrame({
+        "Edad": [25, 30],
+        "Salario_Mensual": [5000.0, 6000.0],
+        "Puntaje_Credito": ["Good", "Standard"],
+        "Extra_Col": [1, 2]
+    })
+    translations = config.process.translations
+    
+    df_result = rename_columns(df_input, translations)
+    
+    assert isinstance(df_result, pd.DataFrame)
+    assert df_result.shape == (2, 4)
+    assert list(df_result.columns) == ["Age", "Monthly_Salary", "Credit_Score", "Extra_Col"]
+    assert df_result["Age"].equals(df_input["Edad"])
+    assert df_result["Monthly_Salary"].equals(df_input["Salario_Mensual"])
+    assert df_result["Credit_Score"].equals(df_input["Puntaje_Credito"])
+    assert df_result["Extra_Col"].equals(df_input["Extra_Col"])
 
-    Args:
-        raw_data: DataFrame simulado.
-        config: Configuración simulada.
+def test_strip_strings():
+    """Verifica que strip_strings elimina espacios en blanco de columnas de tipo string."""
+    df_input = pd.DataFrame({
+        "Puntaje_Credito": [" Good ", "Standard "],
+        "Edad": [25, 30],
+        "Nombre": ["  Juan  ", " Maria "]
+    })
+    df_expected = pd.DataFrame({
+        "Puntaje_Credito": ["Good", "Standard"],
+        "Edad": [25, 30],
+        "Nombre": ["Juan", "Maria"]
+    })
+    
+    df_result = strip_strings(df_input)
+    
+    assert isinstance(df_result, pd.DataFrame)
+    assert df_result.shape == (2, 3)
+    assert list(df_result.columns) == ["Puntaje_Credito", "Edad", "Nombre"]
+    pd.testing.assert_frame_equal(df_result, df_expected)
 
-    Returns:
-        None
+def test_handle_missing_values():
+    """Verifica que handle_missing_values imputa valores nulos correctamente."""
+    df_input = pd.DataFrame({
+        "Edad": [25, np.nan, 30],
+        "Salario_Mensual": [5000.0, np.nan, 6000.0],
+        "Puntaje_Credito": ["Good", np.nan, "Standard"]
+    })
+    df_expected = pd.DataFrame({
+        "Edad": [25, 27.5, 30],
+        "Salario_Mensual": [5000.0, 5500.0, 6000.0],
+        "Puntaje_Credito": ["Good", "unknown", "Standard"]
+    })
+    
+    df_result = handle_missing_values(df_input)
+    
+    assert isinstance(df_result, pd.DataFrame)
+    assert df_result.shape == (3, 3)
+    assert list(df_result.columns) == ["Edad", "Salario_Mensual", "Puntaje_Credito"]
+    assert not df_result.isna().any().any()
+    pd.testing.assert_frame_equal(df_result, df_expected)
 
-    Raises:
-        AssertionError: Si los datos no se limpian correctamente.
-    """
-    cleaned_df = clean_data(raw_data, config)
-    assert cleaned_df.isna().sum().sum() == 0
-    assert cleaned_df["Edad"].min() >= config.process.cleaning.min_age
-    assert "age_credit_ratio" not in cleaned_df.columns
+def test_filter_minimum_values():
+    """Verifica que filter_minimum_values elimina filas con valores no positivos."""
+    df_input = pd.DataFrame({
+        "Num_Cuentas_Bancarias": [1, 0, 2],
+        "Num_Prestamos": [2, 1, 0],
+        "Edad": [25, 30, 35],
+        "Puntaje_Credito": ["Good", "Standard", "Good"]
+    })
+    df_expected = pd.DataFrame({
+        "Num_Cuentas_Bancarias": [1],
+        "Num_Prestamos": [2],
+        "Edad": [25],
+        "Puntaje_Credito": ["Good"]
+    })
+    
+    df_result = filter_minimum_values(df_input)
+    
+    assert isinstance(df_result, pd.DataFrame)
+    assert df_result.shape == (1, 4)
+    assert list(df_result.columns) == ["Num_Cuentas_Bancarias", "Num_Prestamos", "Edad", "Puntaje_Credito"]
+    pd.testing.assert_frame_equal(df_result.reset_index(drop=True), df_expected.reset_index(drop=True))
 
-def test_transform_data(raw_data, config):
-    """Verifica que transform_data codifica y selecciona columnas.
+def test_filter_by_age(config):
+    """Verifica que filter_by_age filtra filas con edad menor a la mínima."""
+    df_input = pd.DataFrame({
+        "Edad": [16, 18, 25],
+        "Salario_Mensual": [3000.0, 5000.0, 6000.0],
+        "Puntaje_Credito": ["Standard", "Good", "Good"]
+    })
+    df_expected = pd.DataFrame({
+        "Edad": [18, 25],
+        "Salario_Mensual": [5000.0, 6000.0],
+        "Puntaje_Credito": ["Good", "Good"]
+    })
+    
+    df_result = filter_by_age(df_input, config.process.cleaning.min_age)
+    
+    assert isinstance(df_result, pd.DataFrame)
+    assert df_result.shape == (2, 3)
+    assert list(df_result.columns) == ["Edad", "Salario_Mensual", "Puntaje_Credito"]
+    pd.testing.assert_frame_equal(df_result.reset_index(drop=True), df_expected.reset_index(drop=True))
 
-    Args:
-        raw_data: DataFrame simulado.
-        config: Configuración simulada.
+def test_filter_by_age_credit_ratio(config):
+    """Verifica que filter_by_age_credit_ratio filtra filas según la relación edad/historial crediticio."""
+    df_input = pd.DataFrame({
+        "Edad": [25, 30, 20],
+        "Edad_Historial_Credito": [60, 12, 120],
+        "Puntaje_Credito": ["Good", "Standard", "Good"]
+    })
+    df_expected = pd.DataFrame({
+        "Edad": [20],
+        "Edad_Historial_Credito": [120],
+        "Puntaje_Credito": ["Good"]
+    })
+    
+    df_result = filter_by_age_credit_ratio(df_input, config.process.cleaning.max_age_credit_ratio)
+    
+    assert isinstance(df_result, pd.DataFrame)
+    assert df_result.shape == (1, 3)
+    assert list(df_result.columns) == ["Edad", "Edad_Historial_Credito", "Puntaje_Credito"]
+    assert "age_credit_ratio" not in df_result.columns
+    pd.testing.assert_frame_equal(df_result.reset_index(drop=True), df_expected.reset_index(drop=True))
 
-    Returns:
-        None
+def test_drop_columns(config):
+    """Verifica que drop_columns elimina las columnas especificadas."""
+    df_input = pd.DataFrame({
+        "Edad": [25, 30],
+        "ID": [1, 2],
+        "Nombre": ["Juan", "Maria"],
+        "Puntaje_Credito": ["Good", "Standard"]
+    })
+    df_expected = pd.DataFrame({
+        "Edad": [25, 30],
+        "Puntaje_Credito": ["Good", "Standard"]
+    })
+    
+    df_result = drop_columns(df_input, config.process.cleaning.drop_columns)
+    
+    assert isinstance(df_result, pd.DataFrame)
+    assert df_result.shape == (2, 2)
+    assert list(df_result.columns) == ["Edad", "Puntaje_Credito"]
+    pd.testing.assert_frame_equal(df_result.reset_index(drop=True), df_expected.reset_index(drop=True))
 
-    Raises:
-        AssertionError: Si la transformación no es correcta.
-    """
-    cleaned_df = clean_data(raw_data, config)
-    transformed_df = transform_data(cleaned_df, config)
-    assert "Puntaje_Credito" in transformed_df.columns
-    assert all(col in transformed_df.columns for col in ["Salario_Mensual", "Deuda_Pendiente", "Edad"])
+def test_encode_categorical():
+    """Verifica que encode_categorical codifica una columna categórica con OneHotEncoder."""
+    df_input = pd.DataFrame({
+        "Ocupacion": ["Ingeniero", "Profesor"],
+        "Edad": [25, 30]
+    })
+    df_expected = pd.DataFrame({
+        "Edad": [25, 30],
+        "Ocupacion_Profesor": [0.0, 1.0]
+    })
+    
+    df_result = encode_categorical(df_input, "Ocupacion", drop="first")
+    
+    assert isinstance(df_result, pd.DataFrame)
+    assert df_result.shape == (2, 2)
+    assert list(df_result.columns) == ["Edad", "Ocupacion_Profesor"]
+    pd.testing.assert_frame_equal(df_result.reset_index(drop=True), df_expected.reset_index(drop=True))
 
-def test_create_new_features(raw_data, config):
-    """Verifica que create_new_features genera nuevas columnas.
-
-    Args:
-        raw_data: DataFrame simulado.
-        config: Configuración simulada.
-
-    Returns:
-        None
-
-    Raises:
-        AssertionError: Si las nuevas features no se crean.
-    """
-    cleaned_df = clean_data(raw_data, config)
-    transformed_df = transform_data(cleaned_df, config)
-    featured_df = create_new_features(transformed_df, config.process.new_features)
-    assert "debt_to_income" in featured_df.columns
-    assert "payment_to_income" in featured_df.columns
-    assert "credit_history_ratio" in featured_df.columns
-
-def test_process_data(config, tmp_path):
-    """Verifica que process_data genera archivos procesados.
-
-    Args:
-        config: Configuración simulada.
-        tmp_path: Directorio temporal proporcionado por pytest.
-
-    Returns:
-        None
-
-    Raises:
-        AssertionError: Si los archivos no se guardan.
-    """
-    with pytest.MonkeyPatch.context() as m:
-        m.setattr("src.preprocess.get_original_cwd", lambda: str(tmp_path))
-        (tmp_path / "tests" / "data" / "raw").mkdir(parents=True)
-        pd.DataFrame({
-            "Salario_Mensual": [5000, 6000],
-            "Deuda_Pendiente": [2000, 2500],
-            "Edad": [30, 40],
-            "Num_Cuentas_Bancarias": [2, 3],
-            "Num_Prestamos": [1, 2],
-            "Edad_Historial_Credito": [24, 36],
-            "Total_Cuota_Mensual": [500, 600],
-            "Puntaje_Credito": ["Good", "Standard"]
-        }).to_csv(tmp_path / "tests" / "data" / "raw" / "credit_data.csv", index=False)
-        config.processed.dir = str(tmp_path / "tests" / "data" / "processed")
-        process_data(config)
-    assert (tmp_path / "tests" / "data" / "processed" / "X_train.csv").exists()
-    assert (tmp_path / "tests" / "data" / "processed" / "X_test.csv").exists()
-    assert (tmp_path / "tests" / "data" / "processed" / "y_train.csv").exists()
-    assert (tmp_path / "tests" / "data" / "processed" / "y_test.csv").exists()
-
-def test_rename_columns(raw_data):
-    """Verifica que rename_columns renombra columnas correctamente.
-
-    Args:
-        raw_data: DataFrame simulado.
-
-    Returns:
-        None
-
-    Raises:
-        AssertionError: Si las columnas no se renombran.
-    """
-    translations = {"Salario_Mensual": "Ingreso_Mensual"}
-    renamed_df = rename_columns(raw_data, translations)
-    assert "Ingreso_Mensual" in renamed_df.columns
-    assert "Salario_Mensual" not in renamed_df.columns
-
-def test_handle_missing_values(raw_data):
-    """Verifica que handle_missing_values imputa valores nulos.
-
-    Args:
-        raw_data: DataFrame simulado.
-
-    Returns:
-        None
-
-    Raises:
-        AssertionError: Si los valores nulos no se manejan.
-    """
-    cleaned_df = handle_missing_values(raw_data)
-    assert cleaned_df.isna().sum().sum() == 0
-
-def test_encode_categorical(raw_data):
-    """Verifica que encode_categorical codifica columnas categóricas.
-
-    Args:
-        raw_data: DataFrame simulado.
-
-    Returns:
-        None
-
-    Raises:
-        AssertionError: Si la codificación no es correcta.
-    """
-    encoded_df = encode_categorical(raw_data, "Puntaje_Credito", drop="Poor")
-    assert "Puntaje_Credito_Standard" in encoded_df.columns
-    assert "Puntaje_Credito_Good" in encoded_df.columns
-    assert "Puntaje_Credito_Poor" not in encoded_df.columns
-    assert "Puntaje_Credito" not in encoded_df.columns
+def test_select_final_columns():
+    """Verifica que select_final_columns selecciona columnas numéricas, codificadas y el target."""
+    df_input = pd.DataFrame({
+        "Edad": [25, 30],
+        "Salario_Mensual": [5000.0, 6000.0],
+        "Puntaje_Credito": ["Good", "Standard"],
+        "Ocupacion_Ingeniero": [1.0, 0.0],
+        "Ocupacion_Profesor": [0.0, 1.0],
+        "Nombre": ["Juan", "Maria"]  # Columna no numérica ni codificada
+    })
+    df_expected = pd.DataFrame({
+        "Edad": [25, 30],
+        "Salario_Mensual": [5000.0, 6000.0],
+        "Ocupacion_Ingeniero": [1.0, 0.0],
+        "Ocupacion_Profesor": [0.0, 1.0],
+        "Puntaje_Credito": ["Good", "Standard"]
+    })
+    
+    df_result = select_final_columns(df_input, "Puntaje_Credito")
+    
+    assert isinstance(df_result, pd.DataFrame)
+    assert df_result.shape == (2, 5)
+    assert list(df_result.columns) == [
+        "Edad",
+        "Salario_Mensual",
+        "Ocupacion_Ingeniero",
+        "Ocupacion_Profesor",
+        "Puntaje_Credito"
+    ]
+    pd.testing.assert_frame_equal(df_result.reset_index(drop=True), df_expected.reset_index(drop=True))

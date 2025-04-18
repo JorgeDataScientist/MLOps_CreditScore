@@ -1,116 +1,73 @@
-"""Pruebas de integración para run_pipeline.py.
+"""Pruebas unitarias para run_pipeline.py.
 
-Verifica que el pipeline completo se ejecuta correctamente y genera los archivos esperados.
+Verifica funciones que ejecutan el pipeline completo y sus etapas.
 
 Dependencias:
     - pytest: Para ejecutar pruebas.
-    - unittest.mock: Para simular configuraciones.
-    - pathlib: Para manejar rutas.
+    - unittest.mock: Para simular subprocess y sistema de archivos.
+    - pathlib: Para manejo de rutas.
 """
 
-import sys
-from pathlib import Path
-
-# Añadir el directorio raíz al sys.path
-ROOT_DIR = Path(__file__).parent.parent
-sys.path.append(str(ROOT_DIR))
-
 import pytest
-from unittest.mock import Mock, patch
-from src.run_pipeline import run_pipeline
-
-# Ruta base para datos simulados
-BASE_PATH = ROOT_DIR / "tests" / "data"
+from unittest.mock import patch, Mock
+from pathlib import Path
+import os
+import subprocess
+from src.run_pipeline import run_stage, run_pipeline
 
 @pytest.fixture
-def config():
-    """Crea una configuración simulada para pruebas."""
-    return Mock(
-        model_config=Mock(_name="model_1"),
-        processed=Mock(
-            dir=str(BASE_PATH / "processed"),
-            X_train=Mock(name="X_train.csv"),
-            X_test=Mock(name="X_test.csv"),
-            y_train=Mock(name="y_train.csv"),
-            y_test=Mock(name="y_test.csv")
-        ),
-        raw=Mock(path=str(BASE_PATH / "raw" / "credit_data.csv")),
-        model=Mock(dir="models", name="rf_model.pkl", params_name="params.json"),
-        process=Mock(
-            features=["Salario_Mensual", "Deuda_Pendiente", "Edad", "debt_to_income"],
-            target="Puntaje_Credito",
-            target_classes=["Poor", "Standard", "Good"]
-        ),
-        mlflow=Mock(tracking_uri="https://dagshub.com/JorgeDataScientist/MLOps_CreditScore.mlflow"),
-        metrics=Mock(dir="metrics"),
-        informe=Mock(dir="informe")
+def mock_subprocess_run():
+    """Simula subprocess.run."""
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = Mock(stdout="Success", stderr="")
+        yield mock_run
+
+@pytest.fixture
+def mock_path():
+    """Simula Path.cwd."""
+    with patch("pathlib.Path.cwd", return_value=Path("/mock/path")):
+        yield
+
+@pytest.fixture
+def mock_os_environ():
+    """Simula os.environ para el entorno virtual."""
+    with patch("os.environ", {"VIRTUAL_ENV": "/mock/path/env"}):
+        yield
+
+def test_run_stage_success(mock_subprocess_run, mock_path, mock_os_environ):
+    """Verifica que run_stage ejecuta un script correctamente."""
+    run_stage("preprocess.py")
+    expected_python_path = os.path.join("/mock/path/env", "Scripts", "python.exe")
+    expected_script_path = str(Path("/mock/path/src/preprocess.py"))
+    mock_subprocess_run.assert_called_once_with(
+        [expected_python_path, expected_script_path],
+        check=True, capture_output=True, text=True, encoding="utf-8"
     )
 
-@patch("src.run_pipeline.preprocess")
-@patch("src.run_pipeline.train")
-@patch("src.run_pipeline.evaluate")
-def test_pipeline_execution(mock_evaluate, mock_train, mock_preprocess, config, tmp_path):
-    """Verifica que run_pipeline ejecuta los scripts correctamente.
+def test_run_stage_failure(mock_subprocess_run, mock_path, mock_os_environ):
+    """Verifica que run_stage maneja errores de subprocess."""
+    mock_subprocess_run.side_effect = subprocess.CalledProcessError(
+        1, cmd=["python", "preprocess.py"], stderr="Error"
+    )
+    with pytest.raises(subprocess.CalledProcessError):
+        run_stage("preprocess.py")
 
-    Args:
-        mock_evaluate: Mock de evaluate.main.
-        mock_train: Mock de train.train.
-        mock_preprocess: Mock de preprocess.main.
-        config: Configuración simulada.
-        tmp_path: Directorio temporal proporcionado por pytest.
+def test_run_stage_encoding_error(mock_subprocess_run, mock_path, mock_os_environ):
+    """Verifica que run_stage maneja errores de codificación."""
+    mock_subprocess_run.side_effect = UnicodeDecodeError("utf-8", b"", 0, 1, "invalid")
+    with pytest.raises(UnicodeDecodeError):
+        run_stage("preprocess.py")
 
-    Returns:
-        None
-
-    Raises:
-        AssertionError: Si el pipeline no se ejecuta.
-    """
-    with patch("src.run_pipeline.Path", return_value=tmp_path):
-        run_pipeline(config)
-    mock_preprocess.assert_called_with(config)
-    mock_train.assert_called_with(config)
-    mock_evaluate.assert_called_with(config)
-
-def test_output_files(tmp_path, config):
-    """Verifica que run_pipeline genera todos los archivos esperados.
-
-    Args:
-        tmp_path: Directorio temporal proporcionado por pytest.
-        config: Configuración simulada.
-
-    Returns:
-        None
-
-    Raises:
-        AssertionError: Si los archivos no se generan.
-    """
-    # Configurar mocks para simular ejecución
-    with patch("src.run_pipeline.preprocess") as mock_preprocess, \
-         patch("src.run_pipeline.train") as mock_train, \
-         patch("src.run_pipeline.evaluate") as mock_evaluate, \
-         patch("src.run_pipeline.Path", return_value=tmp_path):
-        # Crear archivos simulados
-        (tmp_path / "tests" / "data" / "processed").mkdir(parents=True)
-        for file in ["X_train.csv", "X_test.csv", "y_train.csv", "y_test.csv"]:
-            (tmp_path / "tests" / "data" / "processed" / file).touch()
-        (tmp_path / "models" / "model_1").mkdir(parents=True)
-        (tmp_path / "models" / "model_1" / "rf_model.pkl").touch()
-        (tmp_path / "models" / "model_1" / "params.json").touch()
-        (tmp_path / "graphics" / "model_1").mkdir(parents=True)
-        for file in ["confusion_matrix.png", "metrics_bar.png", "roc_curve.png"]:
-            (tmp_path / "graphics" / "model_1" / file).touch()
-        (tmp_path / "metrics" / "model_1").mkdir(parents=True)
-        (tmp_path / "metrics" / "model_1" / "metrics.csv").touch()
-        (tmp_path / "metrics" / "model_1" / "class_report_model_1.txt").touch()
-        (tmp_path / "informe" / "model_1").mkdir(parents=True)
-        (tmp_path / "informe" / "model_1" / "informe.html").touch()
-        
-        run_pipeline(config)
-    
-    # Verificar archivos
-    assert (tmp_path / "tests" / "data" / "processed" / "X_train.csv").exists()
-    assert (tmp_path / "models" / "model_1" / "rf_model.pkl").exists()
-    assert (tmp_path / "graphics" / "model_1" / "roc_curve.png").exists()
-    assert (tmp_path / "metrics" / "model_1" / "metrics.csv").exists()
-    assert (tmp_path / "metrics" / "model_1" / "class_report_model_1.txt").exists()
-    assert (tmp_path / "informe" / "model_1" / "informe.html").exists()
+def test_run_pipeline(mock_subprocess_run, mock_path, mock_os_environ):
+    """Verifica que run_pipeline ejecuta todas las etapas."""
+    run_pipeline()
+    assert mock_subprocess_run.call_count == 4
+    expected_calls = [
+        ([os.path.join("/mock/path/env", "Scripts", "python.exe"), str(Path("/mock/path/src/preprocess.py"))],),
+        ([os.path.join("/mock/path/env", "Scripts", "python.exe"), str(Path("/mock/path/src/train.py"))],),
+        ([os.path.join("/mock/path/env", "Scripts", "python.exe"), str(Path("/mock/path/src/evaluate.py"))],),
+        ([os.path.join("/mock/path/env", "Scripts", "python.exe"), str(Path("/mock/path/src/predict.py"))],),
+    ]
+    for i, call in enumerate(mock_subprocess_run.call_args_list):
+        assert call.args[0] == expected_calls[i][0]
+        assert call.kwargs == {"check": True, "capture_output": True, "text": True, "encoding": "utf-8"}

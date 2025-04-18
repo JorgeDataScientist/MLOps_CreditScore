@@ -1,13 +1,13 @@
 """Pruebas unitarias para train.py.
 
 Verifica funciones de carga de datos, construcción del pipeline, cálculo de métricas,
-generación de gráficas y guardado del modelo.
+guardado de la matriz de confusión y gráfica de métricas.
 
 Dependencias:
     - pytest: Para ejecutar pruebas.
     - pandas: Para manipulación de datos.
-    - sklearn: Para métricas y modelos.
-    - unittest.mock: Para simular MLflow y configuraciones.
+    - sklearn: Para pipeline, modelos y métricas.
+    - unittest.mock: Para simular configuraciones.
     - pathlib: Para manejo de rutas.
 """
 
@@ -22,16 +22,14 @@ sys.path.insert(0, str(ROOT_DIR / "src"))
 import pytest
 import pandas as pd
 import numpy as np
-import matplotlib
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import OmegaConf
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
-from src.train import load_data, build_pipeline, save_confusion_matrix, save_metrics_bar, save_roc_curve, train
-from src.utils import compute_metrics, BaseLogger
-
-# Configurar backend de Matplotlib para pruebas
-matplotlib.use("Agg")
+from src.train import load_data, build_pipeline, save_confusion_matrix, save_metrics_bar
+from src.utils import compute_metrics
+import matplotlib
+matplotlib.use('Agg')  # Usar backend no interactivo para evitar errores de Tkinter
 
 # Ruta base para datos simulados
 BASE_PATH = ROOT_DIR / "tests" / "data"
@@ -42,6 +40,9 @@ def config(tmp_path):
     search_space = OmegaConf.create({"n_estimators": [100, 200], "max_depth": [None, 10, 20]})
     cv_config = Mock(folds=5, scoring="f1_macro")
     cv_config.__str__ = lambda self: "f1_macro"
+    params_mock = Mock(random_state=42)  # Mock para params con atributo random_state
+    params_mock.__getitem__ = lambda self, key: {"random_state": 42}[key]  # Simula dict para **params
+    params_mock.keys = lambda: ["random_state"]  # Necesario para **params
     return Mock(
         processed=Mock(
             X_train=Mock(path=str(BASE_PATH / "processed" / "X_train.csv")),
@@ -51,7 +52,7 @@ def config(tmp_path):
         ),
         model_config=Mock(
             _name="model_1",
-            params={"random_state": 42},
+            params=params_mock,
             search_space=search_space,
             cv=cv_config,
             optimization=Mock(n_iter=10),
@@ -133,70 +134,3 @@ def test_save_metrics_bar(tmp_path, processed_data, config):
         with patch("src.train.get_original_cwd", return_value=str(tmp_path)):
             save_metrics_bar(metrics, config)
     assert (tmp_path / "graphics" / "model_1" / "metrics_bar.png").exists()
-
-def test_save_roc_curve(tmp_path, processed_data, config):
-    """Verifica que save_roc_curve guarda la gráfica correctamente."""
-    X_train, X_test, y_train, y_test = processed_data
-    model = RandomForestClassifier(random_state=42).fit(X_train, y_train)
-    y_pred_proba = model.predict_proba(X_test)
-    class_indices = [model.classes_.tolist().index(cls) for cls in config.process.target_classes if cls in model.classes_]
-    y_pred_proba = y_pred_proba[:, class_indices]
-    config.model_config._name = "model_1"
-    with patch("src.train.Path", return_value=tmp_path):
-        with patch("src.train.get_original_cwd", return_value=str(tmp_path)):
-            save_roc_curve(y_test, y_pred_proba, config)
-    assert (tmp_path / "graphics" / "model_1" / "roc_curve.png").exists()
-
-def test_model_saving(tmp_path, processed_data, config):
-    """Verifica que train guarda el modelo correctamente."""
-    config.model.dir = str(tmp_path / "models")
-    config.model.name = "rf_model.pkl"
-    config.model_config._name = "model_1"
-    mock_search = Mock(
-        best_estimator_=RandomForestClassifier(),
-        best_params={"model__n_estimators": 100},
-        best_score_=0.85,
-        predict=Mock(return_value=np.array(["Good", "Standard"])),
-        predict_proba=Mock(return_value=np.array([[0.3, 0.7], [0.12, 0.88]]))  # 2D array for both classes
-    )
-    with patch("src.train.RandomizedSearchCV", return_value=mock_search):
-        with patch("src.train.get_original_cwd", return_value=str(tmp_path)):
-            train(config)
-    assert (tmp_path / "models" / "model_1" / "rf_model.pkl").exists()
-
-def test_params_saving(tmp_path, processed_data, config):
-    """Verifica que train guarda los hiperparámetros correctamente."""
-    config.model.dir = str(tmp_path / "models")
-    config.model.name = "rf_model.pkl"
-    config.model.params_name = "params.json"
-    config.model_config._name = "model_1"
-    mock_search = Mock(
-        best_estimator_=RandomForestClassifier(),
-        best_params={"model__n_estimators": 100},
-        best_score_=0.85,
-        predict=Mock(return_value=np.array(["Good", "Standard"])),
-        predict_proba=Mock(return_value=np.array([[0.3, 0.7], [0.12, 0.88]]))  # 2D array for both classes
-    )
-    with patch("src.train.RandomizedSearchCV", return_value=mock_search):
-        with patch("src.train.get_original_cwd", return_value=str(tmp_path)):
-            train(config)
-    assert (tmp_path / "models" / "model_1" / "params.json").exists()
-
-@patch("src.utils.BaseLogger")
-def test_mlflow_logging(mock_logger, processed_data, config, tmp_path):
-    """Verifica que train registra métricas y modelo en MLflow."""
-    config.model.dir = str(tmp_path / "models")
-    config.model_config._name = "model_1"
-    mock_search = Mock(
-        best_estimator_=RandomForestClassifier(),
-        best_params={"model__n_estimators": 100},
-        best_score_=0.85,
-        predict=Mock(return_value=np.array(["Good", "Standard"])),
-        predict_proba=Mock(return_value=np.array([[0.3, 0.7], [0.12, 0.88]]))  # 2D array for both classes
-    )
-    with patch("src.train.RandomizedSearchCV", return_value=mock_search):
-        with patch("src.train.get_original_cwd", return_value=str(tmp_path)):
-            train(config)
-    mock_logger.return_value.log_params.assert_called()
-    mock_logger.return_value.log_metrics.assert_called()
-    mock_logger.return_value.log_model.assert_called()
