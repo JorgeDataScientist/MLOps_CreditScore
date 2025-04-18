@@ -11,4 +11,4 @@
 2025-04-17 01:53:25 - Commit: "Eliminando Basura" - Hash: 0a5f533 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
 2025-04-17 20:29:15 - Commit: "Api con BentoML Generada y Desplegada" - Hash: ee7bc2c - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
 2025-04-18 01:00:48 - Commit: "Dockerizar modelo con BentoML" - Hash: 1fcbc11 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
-2025-04-18 01:38:05 - Commit: "Readme Actualizado" - Hash: [TBD] - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
+2025-04-18 01:38:05 - Commit: "Readme Actualizado" - Hash: fd05ca6 - Creador: Jorge Luis Garcia - Email: jorgeluisdatascientist@gmail.com - Username DAGsHub: JorgeDataScientist
