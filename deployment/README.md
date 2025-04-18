@@ -1,88 +1,82 @@
 
-# 🚀✨ Intelligent Credit Scoring Pipeline - Deployment ✨🚀
-
-¡Hola! 👋 Esta carpeta contiene todo lo necesario para **desplegar mi modelo de scoring crediticio** como una API usando **BentoML**. Después de entrenar y registrar el modelo, ahora puedo servirlo para hacer predicciones en tiempo real 📡💡.
 
 ---
 
-## 🧰 Lo que necesito antes de comenzar
+# 🚀✨ Intelligent Credit Scoring Pipeline - Deployment ✨🚀
 
-Antes de ejecutar la API, me aseguro de tener todo listo:
+¡Hola! 👋 Esta carpeta contiene todo lo necesario para desplegar mi modelo de scoring crediticio como una API usando **BentoML**. Después de entrenar y registrar el modelo, ahora puedo servirlo para hacer predicciones en tiempo real 📡💡.
+
+---
+
+## 🧰 Requisitos previos
+
+Antes de ejecutar la API, asegúrate de tener lo siguiente:
 
 - 🐍 **Python 3.8+**
-- ⚙️ El entorno virtual `env_pipeline` activado.
-- 📦 Las dependencias instaladas desde `requirements.txt`, ejecutando:
+- ⚙️ Entorno virtual `env_pipeline` activado
+- 📦 Dependencias instaladas desde `requirements.txt`:
 
 ```bash
 pip install -r ../requirements.txt
 ```
 
-- 🧠 Mi modelo entrenado guardado en:  
-  `models/model_1/rf_model.pkl`  
-  (Y ya registrado en BentoML con su etiqueta correspondiente) ✅
+- 🧠 Modelo entrenado guardado en `models/model_1/rf_model.pkl` y registrado en BentoML ✅
 
 ---
 
-## 📁 Archivos importantes de este directorio
+## 📁 Archivos importantes
 
-| Archivo | ¿Para qué lo uso? |
-|--------|-------------------|
-| `bentofile.yaml` | Configura el servicio con BentoML ⚙️ |
-| `service.py` | Define el endpoint `/predict` de mi API 🚀 |
-| `save_model_to_bentoml.py` | Me permite registrar el modelo en BentoML 📥 |
+| Archivo                  | ¿Para qué lo uso?                            |
+|--------------------------|----------------------------------------------|
+| `bentofile.yaml`         | Configura el servicio con BentoML ⚙️         |
+| `service.py`             | Define el endpoint `/predict` 🚀             |
+| `save_model_to_bentoml.py` | Registra el modelo en BentoML 📥           |
 
 ---
 
-## ▶️ Cómo levanto la API
+## ▶️ Cómo levantar la API
 
-### 1️⃣ Activo el entorno virtual
+1️⃣ Activar entorno virtual:
 
 ```bash
 cd G:\MLOps Proyecto End_to_End\IntelligentCreditScoringPipeline\deployment
 .\env_pipeline\Scripts\activate
 ```
 
----
-
-### 2️⃣ Registro el modelo (si hubo cambios)
+2️⃣ Registrar el modelo (si hubo cambios):
 
 ```bash
 python save_model_to_bentoml.py
 ```
 
----
-
-### 3️⃣ Inicio el servicio de la API
+3️⃣ Iniciar el servicio de la API:
 
 ```bash
 bentoml serve service.py:CreditScoringService --reload
 ```
 
-Una vez hecho esto, la API queda disponible en:  
-🌐 **http://127.0.0.1:3000**
+📍 La API estará disponible en: [http://127.0.0.1:3000](http://127.0.0.1:3000)
 
 ---
 
-## 🧪 Cómo pruebo la API
+## 🧪 Cómo probar la API
 
 ### 🌐 Desde Swagger UI
 
-1. Abro el navegador en: [http://127.0.0.1:3000/docs](http://127.0.0.1:3000/docs)
-2. Busco el endpoint `/predict`
-3. Puedo ver un JSON con valores de prueba
-4. Hago clic en **Execute** y obtengo mi predicción 🎉
-
----
+1. Abre [http://127.0.0.1:3000/docs](http://127.0.0.1:3000/docs)
+2. Busca el endpoint `/predict`
+3. Verás un JSON con valores de prueba
+4. Haz clic en **Execute** para obtener tu predicción 🎉
 
 ### 💻 Usando cURL
 
-✅ Si quiero probar con los valores por defecto:
+✅ Valores por defecto:
 
 ```bash
 curl -X POST http://127.0.0.1:3000/predict
 ```
 
-✍️ O puedo enviar mis propios valores:
+✍️ Enviar tus propios valores:
 
 ```bash
 curl -X POST -H "Content-Type: application/json" ^
@@ -94,25 +88,20 @@ curl -X POST -H "Content-Type: application/json" ^
 
 ## 🔄 ¿Qué devuelve la API?
 
-Me devuelve una respuesta como esta:
-
 ```json
 {"predictions": ["Good"]}
 ```
 
-Los posibles valores que puedo recibir son `"Good"`, `"Bad"` o `"Standard"` según cómo fue entrenado el modelo.
+🔹 Los valores posibles: `"Good"`, `"Bad"` o `"Standard"`.
 
 ---
 
-## 📌 Algunas notas útiles
+## 📌 Notas útiles
 
-- El modelo está guardado en:  
-  `C:\Users\<mi_usuario>\.bentoml\models\`
+- Modelo guardado en: `C:\Users\<mi_usuario>\.bentoml\models\`
+- Verifica la etiqueta del modelo: `credit_scoring_model_1:<última_tag>`
 
-- Me aseguro de que la etiqueta del modelo sea algo como:  
-  `credit_scoring_model_1:<última_tag>`
-
-- Si quiero empaquetar todo para producción o Docker, simplemente corro:
+✅ Para empaquetar todo:
 
 ```bash
 bentoml build
@@ -122,67 +111,154 @@ bentoml build
 
 ## 🧾 Ejemplo de entrada para el modelo
 
-Aquí te muestro un ejemplo completo del **JSON que puedo enviar al endpoint `/predict`** para obtener una predicción:
-
 ```json
 {
   "input_data": {
     "Edad": 40,
     "Salario_Mensual": 16000,
-    "Num_Tarjetas_Credito": 2,
-    "Tasa_Interes": 3,
-    "Retraso_Pago": 1,
-    "Num_Pagos_Retrasados": 2,
-    "Cambio_Limite_Credito": 0,
-    "Num_Consultas_Credito": 2,
-    "Deuda_Pendiente": 1000,
-    "Edad_Historial_Credito": 5,
-    "Total_Cuota_Mensual": 200,
-    "Inversion_Mensual": 100,
-    "Saldo_Mensual": 1000,
-    "Comportamiento_de_Pago_High_spent_Large_value_payments": 0,
-    "Comportamiento_de_Pago_High_spent_Medium_value_payments": 0,
-    "Comportamiento_de_Pago_High_spent_Small_value_payments": 0,
-    "Comportamiento_de_Pago_Low_spent_Large_value_payments": 0,
-    "Comportamiento_de_Pago_Low_spent_Medium_value_payments": 1,
-    "Comportamiento_de_Pago_Low_spent_Small_value_payments": 0,
-    "Mezcla_Crediticia_Bad": 0,
-    "Mezcla_Crediticia_Good": 1,
-    "Mezcla_Crediticia_Standard": 0,
-    "Pago_Minimo_No": 1,
-    "Pago_Minimo_Yes": 0,
-    "Ocupacion_Architect": 0,
-    "Ocupacion_Developer": 1,
-    "Ocupacion_Doctor": 0,
-    "Ocupacion_Engineer": 0,
-    "Ocupacion_Entrepreneur": 0,
-    "Ocupacion_Journalist": 0,
-    "Ocupacion_Lawyer": 0,
-    "Ocupacion_Manager": 0,
-    "Ocupacion_Mechanic": 0,
-    "Ocupacion_Media_Manager": 0,
-    "Ocupacion_Musician": 0,
-    "Ocupacion_Scientist": 0,
-    "Ocupacion_Teacher": 0,
-    "Ocupacion_Writer": 0,
-    "debt_to_income": 0.833,
-    "payment_to_income": 0.033,
+    ...
     "credit_history_ratio": 0.167
   }
 }
 ```
 
-🔍 Este JSON representa a una persona de 40 años, con buen historial crediticio y comportamiento financiero saludable. ¡Perfecto para probar la precisión del modelo en situaciones reales!
+🔍 Representa a una persona con buen historial y comportamiento financiero. Ideal para pruebas reales.
 
 ---
 
-## ❗ Qué hago si algo falla
+## ❗ Qué hacer si algo falla
 
-| Problema | Qué hago |
-|----------|----------|
-| ❌ No encuentra el modelo | Verifico con `bentoml models list` y vuelvo a ejecutar `save_model_to_bentoml.py` |
-| ⚠️ Error en la API | Reviso los logs en consola o pruebo desde Swagger UI |
+| Problema | Qué hacer |
+|----------|-----------|
+| ❌ No encuentra el modelo | Verifica con `bentoml models list` y ejecuta `save_model_to_bentoml.py` |
+| ⚠️ Error en la API | Revisa los logs en consola o usa Swagger UI |
 
 ---
 
-🧡 ¡Ya puedo servir predicciones de manera elegante, escalable y rápida! 🚀✨
+# 🐳 Crear Contenedor Docker y Subir a Docker Hub
+
+## 1. Prerrequisitos
+
+- Docker Desktop instalado y corriendo (`docker version`)
+- Cuenta en Docker Hub
+- Modelo registrado: `credit_scoring_model_1`
+
+## 2. Preparar dependencias
+
+Crear `requirements_clean.txt` con:
+
+```txt
+bentoml==1.4.10
+pandas==2.2.3
+pydantic==2.11.2
+scikit-learn==1.6.1
+python-dotenv==1.1.0
+```
+
+Instalarlas (opcional):
+
+```bash
+pip install -r ../requirements_clean.txt
+```
+
+## 3. Registrar el modelo
+
+```bash
+cd G:\MLOps Proyecto End_to_End\IntelligentCreditScoringPipeline\deployment
+python save_model_to_bentoml.py
+```
+
+## 4. Verificar modelos
+
+```bash
+bentoml models list
+```
+
+## 5. Configurar `bentofile.yaml`
+
+```yaml
+service: "service.py:CreditScoringService"
+include:
+  - "*.py"
+python:
+  requirements_txt: "../requirements_clean.txt"
+models:
+  - credit_scoring_model_1:latest
+```
+
+## 6. Construir el Bento
+
+```bash
+cd G:\MLOps Proyecto End_to_End\IntelligentCreditScoringPipeline\deployment
+set PYTHONUTF8=1
+bentoml build
+```
+
+---
+
+## 7. Crear la Imagen Docker
+
+```bash
+bentoml containerize credit_scoring_service_model_1:mrsbs4i4acecsaib
+```
+
+## 8. Verificar la Imagen
+
+```bash
+docker images
+```
+
+---
+
+## 9. Probar Contenedor Localmente
+
+```bash
+docker run --rm -p 3000:3000 credit_scoring_service_model_1:mrsbs4i4acecsaib
+```
+
+📍 Prueba en [http://localhost:3000/docs](http://localhost:3000/docs)
+
+Detener contenedor:
+
+```bash
+docker ps
+docker stop <container_id>
+```
+
+---
+
+## 10. Subir Imagen a Docker Hub
+
+```bash
+docker tag credit_scoring_service_model_1:mrsbs4i4acecsaib jorgedatascientist/credit_scoring_service_model_1:mrsbs4i4acecsaib
+docker login
+docker push jorgedatascientist/credit_scoring_service_model_1:mrsbs4i4acecsaib
+```
+
+✅ **La imagen del contenedor ha sido publicada exitosamente en Docker Hub** y puedes consultarla aquí:
+
+🔗 [https://hub.docker.com/repository/docker/jorgedatascientist/credit_scoring_service_model_1/general](https://hub.docker.com/repository/docker/jorgedatascientist/credit_scoring_service_model_1/general)
+
+---
+
+## 11. (Opcional) Probar desde Docker Hub
+
+```bash
+docker pull jorgedatascientist/credit_scoring_service_model_1:mrsbs4i4acecsaib
+docker run --rm -p 3000:3000 jorgedatascientist/credit_scoring_service_model_1:mrsbs4i4acecsaib
+```
+
+---
+
+## 🛠️ Solución de Problemas
+
+| Problema | Qué hacer |
+|----------|-----------|
+| ❌ Docker no responde | Inicia Docker Desktop y verifica con `docker version` |
+| ❌ Modelo no en BentoML | Ejecuta `save_model_to_bentoml.py` |
+| ❌ Error en `bentoml build` | Verifica `requirements_clean.txt` y `bentofile.yaml` |
+| ❌ Error en `bentoml containerize` | Confirma que Docker esté activo |
+| ❌ Contenedor no inicia | Usa `docker logs <container_id>` para más información |
+| ❌ Error al subir | Asegúrate de estar autenticado en Docker Hub |
+
+---
