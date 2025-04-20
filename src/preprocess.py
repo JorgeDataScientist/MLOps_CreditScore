@@ -174,7 +174,8 @@ def clean_data(df: pd.DataFrame, config: DictConfig) -> pd.DataFrame:
     return df_clean
 
 
-def encode_categorical(df: pd.DataFrame, column: str, drop: str | None) -> pd.DataFrame:
+from typing import Optional
+def encode_categorical(df: pd.DataFrame, column: str, drop: Optional[str] = None) -> pd.DataFrame:
     """Codifica una columna categórica con OneHotEncoding.
 
     Args:
